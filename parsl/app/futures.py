@@ -21,6 +21,13 @@ class DataFuture(Future):
     We are simply wrapping a AppFuture, and adding the specific case where, if
     the future is resolved i.e file exists, then the DataFuture is assumed to be
     resolved.
+
+    The super.result of the future is set to parent_fu.result. TODO: WHY?
+    The results of calling self.result() will give different behaviour though
+      - fileobj. But add_done_callback will pass the parent result.
+    TODO: a consistency unit test:   self.result() should return the same as
+        a callback added with add_done_callback(). I believe (prior to this
+        commit) that this is violated because of the above.
     """
 
     def parent_callback(self, parent_fu):
@@ -34,18 +41,18 @@ class DataFuture(Future):
 
         Updates the super() with the result() or exception()
         """
-        if parent_fu.done() is True:
-            e = parent_fu._exception
-            if e:
-                super().set_exception(e)
-            else:
-                super().set_result(self.file_obj)
-        return
+
+        # if parent_fu.done() is True: # TODO: would it ever not be in here?
+        e = parent_fu._exception
+        if e:
+            super().set_exception(e)
+        else:
+            super().set_result(self.file_obj)
 
     def __init__(self, fut, file_obj, tid=None):
         """Construct the DataFuture object.
 
-        If the file_obj is a string convert to a File.
+        If the file_obj is a string (but not a File) convert to a File.
 
         Args:
             - fut (AppFuture) : AppFuture that this DataFuture will track
@@ -65,7 +72,7 @@ class DataFuture(Future):
         self.parent = fut
 
         if fut is None:
-            logger.debug("Setting result to filepath since no future was passed")
+            logger.debug("Setting result to filepath immediately since no parent future was passed")
             self.set_result(self.file_obj)
 
         else:

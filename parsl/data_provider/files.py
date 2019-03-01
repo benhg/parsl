@@ -54,6 +54,7 @@ class File(object):
         self.filename = os.path.basename(self.path)
 
     def __str__(self):
+        logger.debug("File with URI {} providing string repr: {}".format(self.url, self.filepath))
         return self.filepath
 
     def __repr__(self):

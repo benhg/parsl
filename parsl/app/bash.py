@@ -4,6 +4,7 @@ from inspect import signature, Parameter
 from parsl.app.errors import wrap_error
 from parsl.app.futures import DataFuture
 from parsl.app.app import AppBase
+from parsl.data_provider.files import File
 from parsl.dataflow.dflow import DataFlowKernelLoader
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,9 @@ def remote_side_bash_executor(func, *args, **kwargs):
         elif isinstance(stdfspec, str):
             fname = stdfspec
             mode = 'a+'
+        elif isinstance(stdfspec, File):
+            fname = stdfspec.filepath
+            mode = 'a+'
         elif isinstance(stdfspec, tuple):
             if len(stdfspec) != 2:
                 raise pe.BadStdStreamFile("std descriptor %s has incorrect tuple length %s" % (fdname, len(stdfspec)), TypeError('Bad Tuple Length'))
@@ -69,6 +73,7 @@ def remote_side_bash_executor(func, *args, **kwargs):
         try:
             fd = open(fname, mode)
         except Exception as e:
+            logger.debug("Exception when opening filename {} with mode {}".format(fname, mode))
             raise pe.BadStdStreamFile(fname, e)
         return fd
 
@@ -158,6 +163,10 @@ class BashApp(AppBase):
 
         out_futs = [DataFuture(app_fut, o, tid=app_fut.tid)
                     for o in kwargs.get('outputs', [])]
+        if isinstance(kwargs.get('stdout'), File):
+            out_futs.extend([DataFuture(app_fut, kwargs.get('stdout'), tid=app_fut.tid)])
+        if isinstance(kwargs.get('stderr'), File):
+            out_futs.extend([DataFuture(app_fut, kwargs.get('stderr'), tid=app_fut.tid)])
         app_fut._outputs = out_futs
 
         return app_fut

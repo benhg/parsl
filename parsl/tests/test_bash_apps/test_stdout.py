@@ -7,6 +7,7 @@ import parsl
 import parsl.app.errors as perror
 from parsl.app.app import App
 from parsl.tests.configs.local_threads import config
+from parsl import File
 
 
 @App('bash')
@@ -115,6 +116,37 @@ def test_stdout_append():
     os.system('rm -f ' + out + ' ' + err)
 
 
+def test_stdout_file_url():
+
+    """ Testing appending to prior content of stdout (default open() mode) """
+
+    fn_out = os.getcwd() + "/t1.out"
+    fn_err = os.getcwd() + "/t1.err"
+
+    out = File('file://' + fn_out)
+    err = File('file://' + fn_err)
+    os.system('rm -f ' + fn_out)
+    os.system('rm -f ' + fn_err)
+
+    # use of filepath here is assuming that filepath
+    # makes sense on the submit side - that is only
+    # the case with a file: URL
+
+    echo_to_streams('hi', stdout=out, stderr=err).result()
+    len1 = len(open(out.filepath).readlines())
+
+    echo_to_streams('hi', stdout=out, stderr=err).result()
+    len2 = len(open(out.filepath).readlines())
+
+    assert len1 == 1 and len2 == 2, "Line count of output files should be 1 and 2, but:  len1={} len2={}".format(len1, len2)
+
+    # -f is deliberately omitted from these rms because
+    # the files should exist: it is a test failure here for
+    # them to not exist.
+    os.system('rm ' + fn_out)
+    os.system('rm ' + fn_err)
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -135,3 +167,4 @@ if __name__ == '__main__':
     y = test_bad_stderr_file()
     y = test_stdout_truncate()
     y = test_stdout_append()
+    y = test_stdout_file_url()

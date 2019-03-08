@@ -29,6 +29,7 @@ from parsl.dataflow.memoization import Memoizer
 from parsl.dataflow.rundirs import make_rundir
 from parsl.dataflow.states import States, FINAL_STATES, FINAL_FAILURE_STATES
 from parsl.dataflow.usage_tracking.usage import UsageTracker
+from parsl.executors.threads import ThreadPoolExecutor
 from parsl.utils import get_version
 
 from parsl.monitoring.message_type import MessageType
@@ -146,7 +147,8 @@ class DataFlowKernel(object):
 
         self.data_manager = DataManager(self, max_threads=config.data_management_max_threads)
         self.executors = {}
-        self.add_executors(config.executors + [self.data_manager])
+        data_manager_executor = ThreadPoolExecutor(max_threads=config.data_management_max_threads, label='data_manager')
+        self.add_executors(config.executors + [data_manager_executor])
 
         if self.checkpoint_mode == "periodic":
             try:

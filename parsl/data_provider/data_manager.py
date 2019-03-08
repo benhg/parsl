@@ -2,9 +2,7 @@ import os
 import logging
 import requests
 import ftplib
-import concurrent.futures as cf
 from parsl.data_provider.scheme import GlobusScheme
-from parsl.executors.base import ParslExecutor
 from parsl.data_provider.globus import get_globus
 from parsl.app.app import python_app
 
@@ -40,11 +38,9 @@ def _ftp_stage_in(working_dir, outputs=[]):
         ftp.quit()
 
 
-class DataManager(ParslExecutor):
+class DataManager(object):
     """The DataManager is responsible for transferring input and output data.
 
-    It uses the Executor interface, where staging tasks are submitted
-    to it, and DataFutures are returned.
     """
 
     @classmethod
@@ -68,39 +64,10 @@ class DataManager(ParslExecutor):
         """
         self._scaling_enabled = False
 
-        self.label = 'data_manager'
         self.dfk = dfk
         self.max_threads = max_threads
         self.globus = None
         self.managed = True
-
-    def start(self):
-        self.executor = cf.ThreadPoolExecutor(max_workers=self.max_threads)
-
-    def submit(self, *args, **kwargs):
-        """Submit a staging app. All optimization should be here."""
-        return self.executor.submit(*args, **kwargs)
-
-    def scale_in(self, blocks, *args, **kwargs):
-        pass
-
-    def scale_out(self, *args, **kwargs):
-        pass
-
-    def shutdown(self, block=False):
-        """Shutdown the ThreadPool.
-
-        Kwargs:
-            - block (bool): To block for confirmations or not
-
-        """
-        x = self.executor.shutdown(wait=block)
-        logger.debug("Done with executor shutdown")
-        return x
-
-    @property
-    def scaling_enabled(self):
-        return self._scaling_enabled
 
     def initialize_globus(self):
         if self.globus is None:

@@ -465,8 +465,10 @@ class DataFlowKernel(object):
         return exec_fu
 
     def _add_input_deps(self, executor, args, kwargs):
-        """Look for inputs of the app that are remote files. Submit stage_in
-        apps for such files and replace the file objects in the inputs list with
+        """Look for inputs of the app that are remote files. 
+
+        Create appropriate stage_in executions
+        for such files and replace the file objects in the inputs list with
         corresponding DataFuture objects.
 
         Args:
@@ -478,6 +480,10 @@ class DataFlowKernel(object):
         # Return if the task is _*_stage_in
         if executor == 'data_manager':
             return args, kwargs
+
+        # so is it a datafuture that is passed across the wire,
+        # not a file object? except data future contains the file
+        # object?
 
         inputs = kwargs.get('inputs', [])
         for idx, f in enumerate(inputs):

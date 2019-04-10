@@ -561,11 +561,10 @@ class DataFlowKernel(object):
         new_args = []
         for dep in args:
             if isinstance(dep, Future):
-                try:
+                if dep.exception():
+                    dep_failures.extend[dep.exception()]
+                else:
                     new_args.extend([dep.result()])
-                except Exception as e:
-                    if self.tasks[dep.tid]['status'] in FINAL_FAILURE_STATES:
-                        dep_failures.extend([e])
             else:
                 new_args.extend([dep])
 
@@ -573,23 +572,20 @@ class DataFlowKernel(object):
         for key in kwargs:
             dep = kwargs[key]
             if isinstance(dep, Future):
-                try:
+                if dep.exception():
+                    dep_failures.extend[dep.exception()]
+                else:
                     kwargs[key] = dep.result()
-                except Exception as e:
-                    if self.tasks[dep.tid]['status'] in FINAL_FAILURE_STATES:
-                        dep_failures.extend([e])
 
         # Check for futures in inputs=[<fut>...]
         if 'inputs' in kwargs:
             new_inputs = []
             for dep in kwargs['inputs']:
                 if isinstance(dep, Future):
-                    try:
+                    if dep.exception():
+                        dep_failures.extend[dep.exception()]
+                    else:
                         new_inputs.extend([dep.result()])
-                    except Exception as e:
-                        if self.tasks[dep.tid]['status'] in FINAL_FAILURE_STATES:
-                            dep_failures.extend([e])
-
                 else:
                     new_inputs.extend([dep])
             kwargs['inputs'] = new_inputs
